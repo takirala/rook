@@ -215,13 +215,16 @@ func RunAdminCommandNoMultisite(c *Context, expectJSON bool, args ...string) (st
 
 	// If Multus is enabled we proxy all the command to the mgr sidecar
 	if c.CephClusterSpec.Network.IsMultus() {
+		fmt.Println("======> how is DKP multi site!!!!!!!????")
 		output, stderr, err = c.Context.RemoteExecutor.ExecCommandInContainerWithFullOutputWithTimeout(c.clusterInfo.Context, cephclient.ProxyAppLabel, cephclient.CommandProxyInitContainerName, c.clusterInfo.Namespace, append([]string{"radosgw-admin"}, args...)...)
 	} else {
 		command, args := cephclient.FinalizeCephCommandArgs("radosgw-admin", c.clusterInfo, args, c.Context.ConfigDir)
+		fmt.Printf("=======> final command and args %+v, %+v \n", command, args)
 		output, err = c.Context.Executor.ExecuteCommandWithTimeout(exec.CephCommandsTimeout, command, args...)
 	}
 
 	if err != nil {
+		fmt.Printf("=======> why did it fail :( %q, %#v \n", output, err)
 		return fmt.Sprintf("%s. %s", output, stderr), err
 	}
 	if expectJSON {
@@ -255,6 +258,7 @@ func runAdminCommand(c *Context, expectJSON bool, args ...string) (string, error
 
 	// work around FIFO file I/O issue when radosgw-admin is not compatible between version
 	// installed in Rook operator and RGW version in Ceph cluster (#7573)
+	fmt.Printf("=====> about to run non multisite command %v | %+v\n", expectJSON, args)
 	result, err := RunAdminCommandNoMultisite(c, expectJSON, args...)
 	if err != nil && isFifoFileIOError(err) {
 		logger.Debugf("retrying 'radosgw-admin' command with OMAP backend to work around FIFO file I/O issue. %v", result)
@@ -305,6 +309,7 @@ func CommitConfigChanges(c *Context) error {
 
 	// this stages the current config changees and returns what the new period config will look like
 	// without committing the changes
+	fmt.Printf("=====> about to run period update command after running period get successfully\n")
 	stagedPeriod, err := runAdminCommand(c, true, "period", "update")
 	if err != nil {
 		return errorOrIsNotFound(err, "failed to stage the current RGW configuration period")

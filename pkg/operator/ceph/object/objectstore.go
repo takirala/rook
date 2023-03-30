@@ -400,6 +400,7 @@ func createMultisite(objContext *Context, endpointArg string) error {
 	zoneGroupArg := fmt.Sprintf("--rgw-zonegroup=%s", objContext.ZoneGroup)
 
 	// create the realm if it doesn't exist yet
+	fmt.Printf("running realm get command %v\n", realmArg)
 	output, err := RunAdminCommandNoMultisite(objContext, true, "realm", "get", realmArg)
 	if err != nil {
 		// ENOENT means "No such file or directory"
@@ -414,6 +415,7 @@ func createMultisite(objContext *Context, endpointArg string) error {
 		}
 	}
 
+	fmt.Println("about to run zonegroup get")
 	// create the zonegroup if it doesn't exist yet
 	output, err = RunAdminCommandNoMultisite(objContext, true, "zonegroup", "get", realmArg, zoneGroupArg)
 	if err != nil {
@@ -429,6 +431,7 @@ func createMultisite(objContext *Context, endpointArg string) error {
 		}
 	}
 
+	fmt.Println("about to run zone get")
 	// create the zone if it doesn't exist yet
 	output, err = runAdminCommand(objContext, true, "zone", "get")
 	if err != nil {
@@ -444,6 +447,7 @@ func createMultisite(objContext *Context, endpointArg string) error {
 		}
 	}
 
+	fmt.Printf("about to commit config changes %#v\n", objContext)
 	if err := commitConfigChanges(objContext); err != nil {
 		nsName := fmt.Sprintf("%s/%s", objContext.clusterInfo.Namespace, objContext.Name)
 		return errors.Wrapf(err, "failed to commit config changes after creating multisite config for CephObjectStore %q", nsName)
@@ -542,6 +546,7 @@ func setMultisite(objContext *Context, store *cephv1.CephObjectStore, zone *ceph
 	logger.Debugf("setting multisite configuration for object-store %v", store.Name)
 
 	if store.Spec.IsMultisite() {
+		fmt.Println("=====> should never see this")
 		if zone != nil && len(zone.Spec.CustomEndpoints) == 0 {
 			zoneEndpointsList, isEndpointAlreadyExists, err := getZoneEndpoints(objContext, objContext.Endpoint)
 			if err != nil {
@@ -564,6 +569,7 @@ func setMultisite(objContext *Context, store *cephv1.CephObjectStore, zone *ceph
 		}
 	} else {
 		endpointArg := fmt.Sprintf("--endpoints=%s", objContext.Endpoint)
+		fmt.Printf("=====> createMultisite will be called with %v\n", endpointArg)
 		err := createMultisite(objContext, endpointArg)
 		if err != nil {
 			return errorOrIsNotFound(err, "failed create ceph multisite for object-store %q", objContext.Name)
